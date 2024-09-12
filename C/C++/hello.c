@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+// 데이터를 받아서 정렬후 파일에 저장하고 키보드로 값을 받으면 해당값에 순위 출력
 
-#define maxNumbers 20 // 숫자 최대 개수 정의
+#define maxNumbers 25 // 숫자 최대 개수 정의
 
-int data[20] = {3, 4, 23, 493, 54, 13, 56, 76, 123, 888, 413, 234, 5, 432, 324, 11, 43, 53, 99, 1};
+int data[25] = {3, 4, 23, 493, 54, 13, 56, 76, 123, 888, 413, 234, 5, 432, 324, 11, 43, 53, 99, 1, 4, 5, 6, 34, 66};
 
 int main()
 {
@@ -15,15 +16,15 @@ int main()
 
     // 만약 키보드에서 입력받아서 하는 경우 이 부분 주석 취소하면 됩니다.
     char input[100]; // 숫자를 입력할 공간
-    printf("텍스트를 입력하세요: ");
-    fgets(input, sizeof(input), stdin);
-    fprintf(file, "%s", input);
+    // printf("텍스트를 입력하세요: ");
+    // fgets(input, sizeof(input), stdin);
+    // fprintf(file, "%s", input);
 
     // 만약 키보드에서 입력받아서 하는 경우 아래 반복문을 주석 처리하면 됩니다.
-    // for (int i = 0; i < 20; i++) // 리스트에 있는 데이터를 저장 하는 형식
-    //{
-    //    fprintf(file, "%d ", data[i]);
-    //}
+    for (int i = 0; i < 25; i++) // 리스트에 있는 데이터를 저장 하는 형식
+    {
+        fprintf(file, "%d ", data[i]);
+    }
 
     fclose(file); // 파일 닫기
 
