@@ -47,7 +47,12 @@ int main()
     {
         index++;
     }
-
+    printf("input.dat에서 읽은 정렬된 단어들:\n");
+    for (int i = 0; i < index; i++)
+    {
+        printf("%s, ", words[i]);
+    }
+    printf("\n");
     fclose(file); // input.dat 파일 닫기
 
     // 버블 정렬로 단어 정렬 (사전순으로 오름차순 정렬)
