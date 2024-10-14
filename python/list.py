@@ -65,17 +65,132 @@
 #     # 0은 거짓취급
 #     print("true")
 
-time=int(input('what time? : '))
-m_time = int(input('몇분? : '))
-time = time*100+m_time
-class_start = 1600
-if class_start - time < 10:
-    print('지각')
-elif class_start < time:
-    print('지각')
-else:
-    money = int(input('얼마냐? : '))
-    if money >= 6000 :
-        print('taxi')
-    else :
-        print('뛰어라')
+
+#다음에도 쓸 수 있다.
+# time=int(input('what time? : '))
+# m_time = int(input('몇분? : '))
+# time = time*100+m_time
+# class_start = 1600
+# if class_start - time < 10:
+#     print('지각')
+# elif class_start < time:
+#     print('지각')
+# else:
+#     money = int(input('얼마냐? : '))
+#     if money >= 6000 :
+#         print('taxi')
+#     else :
+#         print('뛰어라')
+
+#무조건 1번 이상 실행
+# prmes=[2,3,5,7]
+# for prmes in prmes:
+#     print(prmes)
+# print("\n")
+# for prmes in range (5):
+#     print(prmes)
+# print("\n")
+# for prmes in range (3,6):
+#     print(prmes)
+# print("\n")
+# for prmes in range (3,8,2):
+#     print(prmes)
+
+# count=0
+# while count <5:
+#     print(count)
+#     count+=1
+# print("\n")
+
+# count=0
+# while count <5:
+#     print(count)
+#     count=count+1
+
+# sum=0
+# y=0
+# x=int(input())
+# while(y<=x):
+#     print(sum)
+#     sum+=y
+#     y+=1
+# print(sum)
+
+# count =0
+# while count <5:
+#     print(count)
+#     count+=1
+# else:
+#     print("깂%d" %(count))
+# print("\n")
+
+# count =0
+# for i in range (1,10):
+#     if(i%5==0):
+#         break
+#     else: 
+#         print(i)
+
+# def fun():
+#     print("안녕 함수야")
+# def sum(a,b):
+#     print(a+b)
+# fun()
+# sum("안녕","이것도")
+
+# def nsum():
+#     sum=0
+#     y=0
+#     x=int(input("n 입력 해라:"))
+#     while(y<=x):
+#         sum+=y
+#         y+=1
+#     print(sum)
+# nsum()
+
+# class MyClass:
+#     variable="blah"
+#     def function (self):
+#         print("이거는ㄴ 클ㄹ래스 안에 있어")
+
+# myobjectx=MyClass()
+# myobjecty=MyClass()
+
+# myobjecty.variable="yackity"
+
+# print(myobjectx.variable)
+# print(myobjecty.variable)
+
+# myobjectx.function()
+
+# class Student:
+#     "this is a studet class"
+#     age =21
+#     def greet(self):
+#         print("hello")
+# jaime=Student()
+# print(Student.greet)
+# print(jaime.greet())
+# print(jaime)
+
+# jaime.greet()#이런식으로 써야함
+
+class Complex:
+    def __init__(self,r=0,i=0):
+        self.real=r
+        self.imag=i
+
+    def get_data(self):
+        print(f'{self.real},{self.imag}')
+
+num2= Complex(5)
+num1=Complex()
+num2.attr=10
+num1.attr=10
+
+print((num2.real,num2.imag,num2.attr))
+print(num1.attr)
+num1=Complex(3,-4.5)
+
+# print("\n")
+# num1.get_data()
