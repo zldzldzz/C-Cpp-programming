@@ -175,22 +175,133 @@
 
 # jaime.greet()#이런식으로 써야함
 
-class Complex:
-    def __init__(self,r=0,i=0):
-        self.real=r
-        self.imag=i
+# class Complex:
+#     def __init__(self,r=0,i=0):
+#         self.real=r
+#         self.imag=i
 
-    def get_data(self):
-        print(f'{self.real},{self.imag}')
+#     def get_data(self):
+#         print(f'{self.real},{self.imag}')
 
-num2= Complex(5)
-num1=Complex()
-num2.attr=10
-num1.attr=10
+# num2= Complex(5)
+# num1=Complex()
+# num2.attr=10
+# num1.attr=10
 
-print((num2.real,num2.imag,num2.attr))
-print(num1.attr)
-num1=Complex(3,-4.5)
+# print((num2.real,num2.imag,num2.attr))
+# print(num1.attr)
+# num1=Complex(3,-4.5)
 
 # print("\n")
 # num1.get_data()
+
+# phonebook={
+#     "lee":12332414,
+#     "jeang":123423,
+#     "han":23413545
+# }
+# print(phonebook)
+# phonebook={}
+# phonebook["jeang"]=132
+# phonebook["lee"]=312
+# print(phonebook)
+
+# for name, number in phonebook.items():
+#     print("%s의 번호는 %d입니다"%(name,number))
+
+# def myfun1():# 첫번째 함수 선언
+#     x='lee'#지역변수 x에 입력
+#     def myfun2():# 두번째 함수 선언
+#         nonlocal x #논지역변수 x 재선언
+#         x="hello" #별도로 리턴하지 않음
+#     myfun2()
+#     return x# 함수 1의 결과가 리턴 받지 않아도 2번의 결과에 따라 결정
+# print(myfun1())
+
+# def myfun1():
+#     x='lee'
+#     def myfun2():
+#         x="hello"
+#     myfun2()
+#     return x
+# print(myfun1())
+
+# try:
+#     print(x)#x의 값이 있으면 else 
+#     #무조건 finally실행
+#     #값이 없는경우 except실행
+# except:
+#     print("qwef")
+# else:
+#     print("wef")
+# finally:
+#     print("wef")
+
+# # 파일 쓰기
+# f = open("test.txt", "w")
+# f.write("hellowqeFGVAfqw")
+# f.close()  # 파일을 반드시 닫아줍니다.
+
+# # 파일 읽기
+# f = open("test.txt", "r")
+# content = f.read()  # 파일 내용을 읽습니다.
+# print(content)  # 읽은 내용을 출력합니다.
+# f.close()  # 파일을 닫아줍니다.
+
+# from tkinter import *
+# from tkinter.filedialog import askopenfilename
+# from tkinter.filedialog import asksaveasfilename
+# fd=askopenfilename()
+# if(fd!=None):
+#     f3=open(fd,"r")
+#     fr=f3.readline()
+# for line in fr:
+#     line= line.rstrip()
+#     print(line,end='')
+
+#함수를 이용해서 n!를 구하는 프로그램을 작성하시오
+
+# class nP:
+#     def __init__(self):
+#         self.result = 1
+
+#     def getmul(self,x, num):
+
+#         self.result = x * num 
+#         return self.result
+
+#     def nFor(self, x, t):#3
+#         for n in range(1, t + 1): 
+#             x = self.getmul(x,n) 
+#         return x
+
+# nP1 = nP()
+# t = int(input(" t입력해라: "))  
+# x = 1
+# x = nP1.nFor(x, t) 
+
+# print(x) 
+
+
+# pone={"lee":123,
+#       "toy":1234,
+#       "hun":4444
+#       }
+# for name, num in pone.items():
+#     print(name,num)
+
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+fd=askopenfilename()
+con=0
+if fd:
+    f3=open(fd,"r")
+    fr=f3.read()
+    li=fr.split()
+    print(len(li))
+    inp=input("입력하라유")
+    for x in li:
+        if x==inp:
+            con+=1
+    f3.close
+print(con)

@@ -1,6 +1,8 @@
 {
   "files.associations": {
     "iostream": "cpp",
-    "ihave2.C": "cpp"
+    "ihave2.C": "cpp",
+    "NUM9.C": "cpp",
+    "MAX.C": "cpp"
   }
 }

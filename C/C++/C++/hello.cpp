@@ -1,23 +1,18 @@
 #include <iostream>
-#include <string> 
+#include <string>
 using namespace std;
 
-class Rectangle
-	{
-	public:
-	int width;
-	int height;
-	double getArea(/* args */);
-	};
-	double Rectangle::getArea(){
-		return width*height;
-	}
-
 int main() {
+	string s;
 
-	Rectangle rect;
-	rect.width = 3;
-	rect.height = 5;
-	cout << "사각형의 면적은 " << rect.getArea() << endl;
+	cout << "문자열 입력" << endl;
+	getline(cin, s, '\n');
+	int len = s.length();
+
+	for(int i = 0; i < len; i++) {
+		string first = s.substr(0, len-1);
+		string last = s.substr(len-1,len);
+		s = last + first;
+		cout << s << endl;
+	}
 }
-
