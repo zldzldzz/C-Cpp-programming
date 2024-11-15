@@ -2,37 +2,127 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define MAX_LENGTH 100
-#define OUT_FILE "out.txt"
+#define INITIAL_SIZE 10 // 초기 심볼 배열 크기
 
-// 라벨 판별 함수: 단어가 ':'로 끝나는지 확인
-bool is_label(const char *word)
+const char *reg16[] = {
+    "AX", "BX", "CX", "DX", "SI", "DI", "SP", "BP", "IP", "FLAGS", "CS", "DS", "SS", "ES", "FS", "GS"};
+
+const char *reg8[] = {
+    "AL", "AH", "BL", "BH", "CL", "CH", "DL", "DH"};
+
+const char *optbl[] = {
+    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC", "AND", "OR", "XOR", "NOT", "CMP", "INT",
+    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE", "CALL", "RET"};
+
+const char *pop[] = {
+    "DW", "DB", "SEGMENT", "ASSUME", "END"};
+
+// 심볼 추가 함수
+void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
 {
-    size_t len = strlen(word);
-    return len > 0 && word[len - 1] == ':';
+    if (*count >= *size)
+    {
+        *size *= 2; // 배열 크기를 두 배로 증가
+        *sym = realloc(*sym, *size * sizeof(char *));
+        if (*sym == NULL)
+        {
+            perror("메모리 할당 실패");
+            exit(1);
+        }
+    }
+
+    (*sym)[*count] = strdup(new_symbol);
+    if ((*sym)[*count] == NULL)
+    {
+        perror("메모리 할당 실패");
+        exit(1);
+    }
+
+    (*count)++;
 }
 
-// 라벨에서 ':' 제거
-void remove_colon(char *word)
+// 심볼 해제 함수
+void free_symbols(char **sym, int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        free(sym[i]);
+    }
+    free(sym);
+}
+
+// 문자열 마지막 문자 제거
+void pop_back(char *word)
 {
     size_t len = strlen(word);
-    if (len > 0 && word[len - 1] == ':')
+    if (len > 0)
     {
         word[len - 1] = '\0';
     }
 }
 
-// DB/DW 판별 함수
-bool is_data_declaration(const char *word)
+// 문자열 첫 번째 문자 제거
+void pop_front(char *word)
 {
-    return strcmp(word, "DB") == 0 || strcmp(word, "DW") == 0;
+    size_t len = strlen(word);
+    if (len > 0)
+    {
+        memmove(word, word + 1, len);
+    }
+}
+
+// 특수 문자 제거pop_backoptbl
+void clean_word(char *word)
+{
+    size_t len = strlen(word);
+
+    if (len > 0 && (word[len - 1] == ',' || word[len - 1] == ':'))
+    {
+        pop_back(word);
+        len--;
+    }
+
+    if (len > 1 && word[0] == '[' && word[len - 1] == ']')
+    {
+        pop_back(word);
+        pop_front(word);
+    }
+}
+
+// 정수 판별 함수
+bool is_integer(const char *word)
+{
+    for (int i = 0; word[i] != '\0'; i++)
+    {
+        if (!isdigit(word[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 배열에서 단어를 찾고 배열 이름으로 대체
+bool find_and_replace(const char *word, const char *arr[], int size, const char *arr_name, char *output)
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (strcmp(word, arr[i]) == 0)
+        {
+            sprintf(output, "%s", arr_name);
+            return true;
+        }
+    }
+    return false;
 }
 
 int main()
 {
     FILE *input_file = fopen("symbol.txt", "r");
-    FILE *output_file = fopen(OUT_FILE, "w");
+    FILE *output_file = fopen("out.txt", "w");
     if (input_file == NULL || output_file == NULL)
     {
         printf("파일을 열 수 없습니다.\n");
@@ -40,88 +130,58 @@ int main()
     }
 
     char line[MAX_LENGTH];
-    int word_count = 0;
-    char *words[MAX_LENGTH] = {0};  // 단어 저장 배열
-    int word_positions[MAX_LENGTH]; // 위치 저장 배열
-    int total_words = 0;            // 전체 단어 수
-
-    // 첫 번째 단계: 단어와 위치 저장
-    while (fgets(line, sizeof(line), input_file))
+    char output_word[MAX_LENGTH];
+    char **sym = malloc(INITIAL_SIZE * sizeof(char *));
+    if (sym == NULL)
     {
-        char *token = strtok(line, " \t\n");
-        char *previous_token = NULL; // DB/DW 앞의 단어를 추적하기 위한 변수
-        while (token != NULL)
-        {
-            word_positions[total_words] = ++word_count;
-            words[total_words] = strdup(token); // 단어 저장
-
-            // DB/DW 앞에 위치한 단어인 경우 출력
-            if (is_data_declaration(token) && previous_token != NULL)
-            {
-                printf("단어: %s, 위치: %d번째 단어\n", previous_token, word_positions[total_words - 1]);
-            }
-
-            // 라벨인 경우 위치 출력
-            if (is_label(token))
-            {
-                remove_colon(token); // ':' 제거
-                printf("라벨: %s, 위치: %d번째 단어\n", token, word_positions[total_words]);
-            }
-
-            previous_token = token; // 현재 토큰을 이전 토큰으로 설정
-            total_words++;
-            token = strtok(NULL, " \t\n");
-        }
+        perror("메모리 할당 실패");
+        return 1;
     }
 
-    // 두 번째 단계: OUT.txt에 위치로 대체하여 저장
-    rewind(input_file);
-    word_count = 0; // 단어 카운트를 초기화
+    int size = INITIAL_SIZE;
+    int count = 0;
 
     while (fgets(line, sizeof(line), input_file))
     {
         char *token = strtok(line, " \t\n");
         while (token != NULL)
         {
-            bool replaced = false;
+            memset(output_word, 0, sizeof(output_word));
+            clean_word(token); // 단어 정리
 
-            for (int i = 0; i < total_words; i++)
+            if (is_integer(token))
             {
-                // 현재 토큰이 저장된 단어와 일치하면 위치로 대체
-                if (strcmp(token, words[i]) == 0)
-                {
-                    if (is_label(words[i]) || (i > 0 && is_data_declaration(words[i - 1])))
-                    {
-                        fprintf(output_file, "%d ", word_positions[i]);
-                    }
-                    else
-                    {
-                        fprintf(output_file, "%s ", token);
-                    }
-                    replaced = true;
-                    break;
-                }
+                fprintf(output_file, "num ");
             }
-
-            if (!replaced)
+            else if (find_and_replace(token, reg16, sizeof(reg16) / sizeof(reg16[0]), "reg16", output_word) ||
+                     find_and_replace(token, reg8, sizeof(reg8) / sizeof(reg8[0]), "reg8", output_word) ||
+                     find_and_replace(token, optbl, sizeof(optbl) / sizeof(optbl[0]), "op", output_word) ||
+                     find_and_replace(token, pop, sizeof(pop) / sizeof(pop[0]), "pop", output_word))
             {
-                fprintf(output_file, "%s ", token); // 대체되지 않은 단어 그대로 출력
+                fprintf(output_file, "%s ", output_word);
+            }
+            else
+            {
+                fprintf(output_file, "sym ");
+                add_symbol(&sym, &size, &count, token);
             }
 
             token = strtok(NULL, " \t\n");
         }
-        fprintf(output_file, "\n"); // 줄바꿈
-    }
-
-    // 동적 메모리 해제
-    for (int i = 0; i < total_words; i++)
-    {
-        free(words[i]);
+        fprintf(output_file, "\n");
     }
 
     fclose(input_file);
     fclose(output_file);
 
-    printf("변환 결과가 %s에 저장되었습니다.\n", OUT_FILE);
+    printf("변환 결과가 out.txt에 저장되었습니다.\n");
+
+    // 심볼 출력 (디버깅용)
+    for (int i = 0; i < count; i++)
+    {
+        printf("심볼 %d: %s\n", i + 1, sym[i]);
+    }
+
+    free_symbols(sym, count);
     return 0;
 }
