@@ -8,17 +8,43 @@
 #define INITIAL_SIZE 10 // 초기 심볼 배열 크기
 
 const char *reg16[] = {
-    "AX", "BX", "CX", "DX", "SI", "DI", "SP", "BP", "IP", "FLAGS", "CS", "DS", "SS", "ES", "FS", "GS"};
+    "AX",
+    "BX",
+    "CX",
+    "DX",
+    "SI",
+    "DI",
+    "SP",
+    "BP",
+    "IP",
+    "FLAGS",
+    "CS",
+    "DS",
+    "SS",
+    "ES",
+    "FS",
+    "GS",
+};
 
 const char *reg8[] = {
-    "AL", "AH", "BL", "BH", "CL", "CH", "DL", "DH"};
+    "AL",
+    "AH",
+    "BL",
+    "BH",
+    "CL",
+    "CH",
+    "DL",
+    "DH",
+};
 
 const char *optbl[] = {
-    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC", "AND", "OR", "XOR", "NOT", "CMP", "INT",
-    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE", "CALL", "RET"};
+    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC", "AND", "OR", "XOR", "NOT", "CMP", "INT", // 어셈블러 명령어
+    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE", "CALL", "RET"                                  // 조건분기 명령어
+};
 
 const char *pop[] = {
-    "DW", "DB", "SEGMENT", "ASSUME", "END"};
+    "DW", "DB",
+    "SEGMENT", "ASSUME", "END"};
 
 // 심볼 추가 함수
 void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
