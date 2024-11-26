@@ -38,20 +38,19 @@ const char *reg8[] = {
 };
 
 const char *optbl[] = {
-    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC", "AND", "OR", "XOR", "NOT", "CMP", "INT", // 어셈블러 명령어
-    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE", "CALL", "RET"                                  // 조건분기 명령어
-};
+    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC",
+    "AND", "OR", "XOR", "NOT", "CMP", "INT",
+    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE",
+    "CALL", "RET"};
 
 const char *pop[] = {
-    "DW", "DB",
-    "SEGMENT", "ASSUME", "END"};
+    "DW", "DB", "SEGMENT", "ASSUME", "END"};
 
-// 심볼 추가 함수
 void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
 {
     if (*count >= *size)
     {
-        *size *= 2; // 배열 크기를 두 배로 증가
+        *size *= 2;
         *sym = realloc(*sym, *size * sizeof(char *));
         if (*sym == NULL)
         {
@@ -59,18 +58,15 @@ void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
             exit(1);
         }
     }
-
     (*sym)[*count] = strdup(new_symbol);
     if ((*sym)[*count] == NULL)
     {
         perror("메모리 할당 실패");
         exit(1);
     }
-
     (*count)++;
 }
 
-// 심볼 해제 함수
 void free_symbols(char **sym, int count)
 {
     for (int i = 0; i < count; i++)
@@ -80,7 +76,6 @@ void free_symbols(char **sym, int count)
     free(sym);
 }
 
-// 문자열 마지막 문자 제거
 void pop_back(char *word)
 {
     size_t len = strlen(word);
@@ -90,7 +85,6 @@ void pop_back(char *word)
     }
 }
 
-// 문자열 첫 번째 문자 제거
 void pop_front(char *word)
 {
     size_t len = strlen(word);
@@ -100,25 +94,20 @@ void pop_front(char *word)
     }
 }
 
-// 특수 문자 제거pop_backoptbl
 void clean_word(char *word)
 {
     size_t len = strlen(word);
-
     if (len > 0 && (word[len - 1] == ',' || word[len - 1] == ':'))
     {
         pop_back(word);
-        len--;
     }
-
-    if (len > 1 && word[0] == '[' && word[len - 1] == ']')
+    if (len > 1 && word[0] == '[' && word[strlen(word) - 1] == ']')
     {
         pop_back(word);
         pop_front(word);
     }
 }
 
-// 정수 판별 함수
 bool is_integer(const char *word)
 {
     for (int i = 0; word[i] != '\0'; i++)
@@ -131,7 +120,6 @@ bool is_integer(const char *word)
     return true;
 }
 
-// 배열에서 단어를 찾고 배열 이름으로 대체
 bool find_and_replace(const char *word, const char *arr[], int size, const char *arr_name, char *output)
 {
     for (int i = 0; i < size; i++)
@@ -166,35 +154,72 @@ int main()
 
     int size = INITIAL_SIZE;
     int count = 0;
+    int ip = 0; // IP 초기화
 
     while (fgets(line, sizeof(line), input_file))
     {
+        // 줄바꿈만 있는 줄 체크
+        if (strlen(line) == 1 && line[0] == '\n')
+        {
+            continue; // 빈 줄은 IP 증가 없이 무시
+        }
+
         char *token = strtok(line, " \t\n");
+        if (token == NULL)
+        {
+            continue; // 비어 있는 줄은 처리하지 않음
+        }
+
+        bool is_pop_line = false;
+        bool is_sym_line = false;
+
+        char processed_line[MAX_LENGTH] = "";
         while (token != NULL)
         {
             memset(output_word, 0, sizeof(output_word));
-            clean_word(token); // 단어 정리
+            clean_word(token);
 
             if (is_integer(token))
             {
-                fprintf(output_file, "num ");
+                strcat(processed_line, "num ");
             }
             else if (find_and_replace(token, reg16, sizeof(reg16) / sizeof(reg16[0]), "reg16", output_word) ||
                      find_and_replace(token, reg8, sizeof(reg8) / sizeof(reg8[0]), "reg8", output_word) ||
-                     find_and_replace(token, optbl, sizeof(optbl) / sizeof(optbl[0]), "op", output_word) ||
-                     find_and_replace(token, pop, sizeof(pop) / sizeof(pop[0]), "pop", output_word))
+                     find_and_replace(token, optbl, sizeof(optbl) / sizeof(optbl[0]), "op", output_word))
             {
-                fprintf(output_file, "%s ", output_word);
+                strcat(processed_line, output_word);
+                strcat(processed_line, " ");
+            }
+            else if (find_and_replace(token, pop, sizeof(pop) / sizeof(pop[0]), "pop", output_word))
+            {
+                is_pop_line = true;
+                strcat(processed_line, "pop ");
             }
             else
             {
-                fprintf(output_file, "sym ");
+                is_sym_line = true;
+                strcat(processed_line, "sym ");
                 add_symbol(&sym, &size, &count, token);
             }
-
             token = strtok(NULL, " \t\n");
         }
-        fprintf(output_file, "\n");
+
+        // IP 증분 규칙
+        if (is_pop_line)
+        {
+            // POP이 포함된 경우 IP 변화 없음
+        }
+        else if (is_sym_line)
+        {
+            ip += 3; // SYM이 포함된 경우 IP 3씩 증가
+        }
+        else
+        {
+            ip += 2; // 나머지 경우 IP 2씩 증가
+        }
+
+        fprintf(output_file, "%s[IP=%d]\n", processed_line, ip);
+        ip = 0;
     }
 
     fclose(input_file);
@@ -202,7 +227,6 @@ int main()
 
     printf("변환 결과가 out.txt에 저장되었습니다.\n");
 
-    // 심볼 출력 (디버깅용)
     for (int i = 0; i < count; i++)
     {
         printf("심볼 %d: %s\n", i + 1, sym[i]);
