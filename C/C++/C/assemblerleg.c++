@@ -164,7 +164,7 @@ FILE* FileOpenWrite(const char* name) {
 int main(void) {
 	//STRING FILE
 	FILE* stringMfp = NULL;
-	const char* fileName = "symbol.txt";  //열 파일 지정
+	const char* fileName = "test10.asm";  //열 파일 지정
 	stringMfp = FileOpenRead(fileName);  //파일 열기 Part
 
 	//파일 공백 검사

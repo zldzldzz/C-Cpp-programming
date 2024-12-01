@@ -7,6 +7,12 @@
 #define MAX_LENGTH 100
 #define INITIAL_SIZE 10 // 초기 심볼 배열 크기
 
+typedef struct
+{
+    char *symbol;
+    int address;
+} Symbol;
+
 const char *reg16[] = {
     "AX",
     "BX",
@@ -46,20 +52,21 @@ const char *optbl[] = {
 const char *pop[] = {
     "DW", "DB", "SEGMENT", "ASSUME", "END"};
 
-void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
+void add_symbol(Symbol **sym, int *size, int *count, const char *new_symbol, int address)
 {
     if (*count >= *size)
     {
         *size *= 2;
-        *sym = realloc(*sym, *size * sizeof(char *));
+        *sym = realloc(*sym, *size * sizeof(Symbol));
         if (*sym == NULL)
         {
             perror("메모리 할당 실패");
             exit(1);
         }
     }
-    (*sym)[*count] = strdup(new_symbol);
-    if ((*sym)[*count] == NULL)
+    (*sym)[*count].symbol = strdup(new_symbol);
+    (*sym)[*count].address = address;
+    if ((*sym)[*count].symbol == NULL)
     {
         perror("메모리 할당 실패");
         exit(1);
@@ -67,11 +74,11 @@ void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
     (*count)++;
 }
 
-void free_symbols(char **sym, int count)
+void free_symbols(Symbol *sym, int count)
 {
     for (int i = 0; i < count; i++)
     {
-        free(sym[i]);
+        free(sym[i].symbol);
     }
     free(sym);
 }
@@ -133,6 +140,18 @@ bool find_and_replace(const char *word, const char *arr[], int size, const char 
     return false;
 }
 
+int find_symbol_address(Symbol *sym, int count, const char *word)
+{
+    for (int i = 0; i < count; i++)
+    {
+        if (strcmp(sym[i].symbol, word) == 0)
+        {
+            return sym[i].address;
+        }
+    }
+    return -1;
+}
+
 int main()
 {
     FILE *input_file = fopen("symbol.txt", "r");
@@ -145,7 +164,7 @@ int main()
 
     char line[MAX_LENGTH];
     char output_word[MAX_LENGTH];
-    char **sym = malloc(INITIAL_SIZE * sizeof(char *));
+    Symbol *sym = malloc(INITIAL_SIZE * sizeof(Symbol));
     if (sym == NULL)
     {
         perror("메모리 할당 실패");
@@ -158,16 +177,15 @@ int main()
 
     while (fgets(line, sizeof(line), input_file))
     {
-        // 줄바꿈만 있는 줄 체크
         if (strlen(line) == 1 && line[0] == '\n')
         {
             continue; // 빈 줄은 IP 증가 없이 무시
         }
 
         char *token = strtok(line, " \t\n");
-        if (token == NULL || token == ";")
+        if (token == NULL || token[0] == ';')
         {
-            continue; // 비어 있는 줄은 처리하지 않음
+            continue; // 비어 있는 줄 또는 주석은 처리하지 않음
         }
 
         bool is_pop_line = false;
@@ -198,13 +216,19 @@ int main()
             else
             {
                 is_sym_line = true;
-                strcat(processed_line, "sym ");
-                add_symbol(&sym, &size, &count, token);
+                int addr = find_symbol_address(sym, count, token);
+                if (addr == -1)
+                { // 새로운 심볼
+                    add_symbol(&sym, &size, &count, token, ip);
+                    addr = ip;
+                }
+                char addr_str[MAX_LENGTH];
+                sprintf(addr_str, "[%d] ", addr);
+                strcat(processed_line, addr_str);
             }
             token = strtok(NULL, " \t\n");
         }
 
-        // IP 증분 규칙
         if (is_pop_line)
         {
             // POP이 포함된 경우 IP 변화 없음
@@ -219,7 +243,6 @@ int main()
         }
 
         fprintf(output_file, "%s[IP=%d]\n", processed_line, ip);
-        ip = 0;
     }
 
     fclose(input_file);
@@ -229,7 +252,7 @@ int main()
 
     for (int i = 0; i < count; i++)
     {
-        printf("심볼 %d: %s\n", i + 1, sym[i]);
+        printf("심볼 %d: %s -> 주소: %d\n", i + 1, sym[i].symbol, sym[i].address);
     }
 
     free_symbols(sym, count);
