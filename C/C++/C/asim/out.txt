@@ -1,0 +1,41 @@
+MOV [op ] AX [reg16 ] 257 [num ] 2
+MOV [op ] CX [reg16 ] 254 [num ] 2
+MOV [op ] BL [reg8 ] 10H [sym ] 3
+MOV [op ] AL [reg8 ] BL [reg8 ] 2
+MOV [op ] BX [reg16 ] DX [reg16 ] 2
+L1 [sym ] MOV [op ] AX [reg16 ] DATA1 [sym ] 3
+MOV [op ] BX [reg16 ] DATA2 [sym ] 3
+MOV [op ] DATA1 [sym ] AX [reg16 ] 3
+MOV [op ] DATA2 [sym ] BX [reg16 ] 3
+MOV [op ] DATA3 [sym ] AX [reg16 ] 3
+MOV [op ] DATA4 [sym ] BX [reg16 ] 3
+JA [op ] L1 [sym ] 3
+JB [op ] L2 [sym ] 3
+ADD [op ] AX [reg16 ] 257 [num ] 2
+ADD [op ] CX [reg16 ] 16 [num ] 2
+ADD [op ] BL [reg8 ] 10 [num ] 2
+ADD [op ] AX [reg16 ] BX+SI [sym ] 3
+ADD [op ] DI [reg16 ] AX [reg16 ] 2
+ADD [op ] BX [reg16 ] DX [reg16 ] 2
+L2 [sym ] SUB [op ] AX [reg16 ] 257 [num ] 3
+L3 [sym ] SUB [op ] AX [reg16 ] BX [reg16 ] 3
+SUB [op ] CX [reg16 ] AX [reg16 ] 2
+CMP [op ] BX [reg16 ] DX [reg16 ] 2
+L4 [sym ] SUB [op ] AX [reg16 ] DATA2 [sym ] 3
+L5 [sym ] SUB [op ] BX [reg16 ] DATA1 [sym ] 3
+MOV [op ] DATA4 [sym ] AX [reg16 ] 3
+MOV [op ] DATA3 [sym ] BX [reg16 ] 3
+L6 [sym ] SUB [op ] DATA2 [sym ] AX [reg16 ] 3
+L7 [sym ] SUB [op ] DATA1 [sym ] BX [reg16 ] 3
+JZ [op ] L3 [sym ] 3
+JA [op ] L4 [sym ] 3
+JB [op ] L5 [sym ] 3
+JAE [op ] L6 [sym ] 3
+JBE [op ] L7 [sym ] 3
+INC [op ] AX [reg16 ] 2
+DEC [op ] DX [reg16 ] 2
+INT [op ] 21H [sym ] 3
+DATA1 [sym ] DW [pop ] 259 [num ] 0
+DATA2 [sym ] DW [pop ] 256 [num ] 0
+DATA3 [sym ] DB [pop ] 17 [num ] 0
+DATA4 [sym ] DB [pop ] 254 [num ] 0
