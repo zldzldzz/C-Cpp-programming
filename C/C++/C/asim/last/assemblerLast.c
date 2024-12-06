@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <stdlib.h>
+#include <ctype.h>
 
-#define ASMfile "test10.asm"
+#define ASMfile "prog4.asm"
 #define cp_ASMfile "prog3.asm"
 
 #define INS_txt "instruction.txt"
@@ -149,100 +149,72 @@ void macroProcess()
     char buffer[51], buffer1[51], bufferM[51], mac[15];
     char *MACList[MACROCNT];
     int macCnt = 0, wFlag = 0, sFlag = 0;
-
-    FILE *fpA = fopen(ASMfile, "r"); // prog4.asm
+    FILE *fpA = fopen(ASMfile, "r");
     if (fpA == NULL)
     {
-        printf("Error: Cannot open %s\n", ASMfile);
-        return; // 파일 열기 실패
+        printf("base ASM file error");
+        return;
     }
-
-    FILE *fpB = fopen(cp_ASMfile, "w"); // prog3.asm
-    if (fpB == NULL)
+    FILE *fpB = fopen(cp_ASMfile, "w");
+    while (!feof(fpA))
     {
-        printf("Error: Cannot open %s\n", cp_ASMfile);
-        fclose(fpA);
-        return; // 파일 열기 실패
-    }
-
-    while (fgets(buffer, 51, fpA))
-    { // 한 줄씩 읽기
         sFlag = 0;
-        sentenceProcess(buffer); // 한 줄 파싱하여 sen에 저장
-
+        fgets(buffer, 51, fpA);
+        sentenceProcess(buffer);
         if (stricmp(sen.instruction, "SEGMENT") == 0)
-        {
-            wFlag = 1; // 섹션 시작
-        }
-
-        // 매크로 호출 확인
+            wFlag = 1;
         for (int k = 0; k < macCnt; k++)
-        {
             if (strnicmp(sen.instruction, MACList[k], strlen(sen.instruction)) == 0)
             {
-                sFlag = 1; // 매크로 호출 발견
+                sFlag = 1;
                 strcpy(mac, sen.instruction);
                 FILE *fpM = fopen(strcat(mac, ".txt"), "r");
-                if (fpM == NULL)
+                int a = 0;
+                while (!feof(fpM))
                 {
-                    printf("Error: Cannot open macro file for %s\n", mac);
-                    continue;
+                    fgets(bufferM, 51, fpM);
+                    a++;
                 }
-
-                while (fgets(bufferM, 51, fpM))
+                rewind(fpM);
+                int b = 0;
+                while (b < a - 1)
                 {
-                    fputs(bufferM, fpB); // 매크로 내용 쓰기
+                    fgets(bufferM, 51, fpM);
+                    fputs(bufferM, fpB);
+                    b++;
                 }
-
                 fclose(fpM);
             }
-        }
-
-        if (sFlag)
-            continue; // 매크로 확장 내용은 처리 완료
-
-        if (wFlag)
-        {
-            fputs(buffer, fpB); // 매크로 외의 내용 쓰기
-        }
-
+        if (sFlag == 1)
+            continue;
+        if (wFlag == 1)
+            fputs(buffer, fpB);
         if (stricmp(sen.instruction, "END") == 0)
-        {
-            wFlag = 0; // 섹션 종료
-        }
-
-        // 매크로 정의 처리
+            wFlag = 0;
         if (stricmp(sen.instruction, "MACRO") == 0)
         {
             FILE *fpM = fopen(strcat(sen.label, ".txt"), "w");
-            if (fpM == NULL)
-            {
-                printf("Error: Cannot create macro file for %s\n", sen.label);
-                continue;
-            }
-
-            MACList[macCnt] = (char *)malloc(strlen(sen.label) + 1);
+            MACList[macCnt] = (char *)malloc(sizeof(char));
             strcpy(MACList[macCnt], sen.label);
-            macCnt++;
-
-            while (fgets(buffer, 51, fpA))
+            while (1)
             {
+                fgets(buffer, 51, fpA);
                 strcpy(buffer1, buffer);
                 cutp = strtok(buffer1, " \n\t,");
                 cutp = strtok(NULL, "\n\t, ");
                 if (stricmp(cutp, "ENDS") == 0)
-                    break; // 매크로 정의 종료
-
-                fputs(buffer, fpM); // 매크로 내용을 파일에 저장
+                    break;
+                fputs(buffer, fpM);
             }
+            macCnt++;
             fclose(fpM);
         }
     }
-
     fclose(fpA);
     fclose(fpB);
+    for (int k = 0; k < macCnt; k++)
+        printf("%s\n", MACList[k]);
 }
-
 int sympass()
 {
     char buffer[51];
@@ -549,7 +521,7 @@ int passii()
             {
                 if (stricmp(ins[select].dest, "a") == 0 || stricmp(ins[select].dest, "m") == 0 || stricmp(ins[select].dest, "L") == 0 || stricmp(ins[select].dest, "L") == 0)
                     continue;
-                if (destB[0] == '\0')
+                if (strcmp(destB, "\0"))
                     continue;
                 if (binary_buffer[k] == '?')
                 {
@@ -637,7 +609,8 @@ int passii()
                                 printf("%c%c %c%c ", xbuffer[2], xbuffer[3], xbuffer[0], xbuffer[1]);
                             }
                             else
-                                printf("%02X ", atoi(sen.data[k]));
+                                ;
+                            printf("%02X ", atoi(sen.data[k]));
                         }
                     }
                     else

@@ -1,247 +1,301 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
-#define MAX_LENGTH 100
-#define INITIAL_SIZE 10 // 초기 심볼 배열 크기
+const char *instruction[] = {"MOV", "ADD", "SUB", "CMP", "JMP", "JZ", "JA", "JB", "JAE", "JBE", "INC", "DEC", "INT"};
+const char *reg8[] = {"AL", "AH", "BL", "BH", "CL", "CH", "DL", "DH"};
+const char *reg16[] = {"AX", "BX", "CX", "DX", "CS", "DS", "ES", "SS", "IP", "SP", "BP", "SI", "DI"};
+const char *pseudo[] = {"SEGMENT", "ASSUME", "DW", "DB", "END"};
 
-const char *reg16[] = {
-    "AX",
-    "BX",
-    "CX",
-    "DX",
-    "SI",
-    "DI",
-    "SP",
-    "BP",
-    "IP",
-    "FLAGS",
-    "CS",
-    "DS",
-    "SS",
-    "ES",
-    "FS",
-    "GS",
-};
+// 배열 크기 매크로
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
-const char *reg8[] = {
-    "AL",
-    "AH",
-    "BL",
-    "BH",
-    "CL",
-    "CH",
-    "DL",
-    "DH",
-};
-
-const char *optbl[] = {
-    "MOV", "POP", "PUSH", "ADD", "SUB", "MUL", "DIV", "INC", "DEC",
-    "AND", "OR", "XOR", "NOT", "CMP", "INT",
-    "JA", "JAE", "JB", "JBE", "JC", "JE", "JNE", "JZ", "JZE",
-    "CALL", "RET"};
-
-const char *pop[] = {
-    "DW", "DB", "SEGMENT", "ASSUME", "END"};
-
-void add_symbol(char ***sym, int *size, int *count, const char *new_symbol)
+// 특정 문자열이 명령어인지 확인
+int is_instruction(const char *word)
 {
-    if (*count >= *size)
+    for (int i = 0; i < ARRAY_SIZE(instruction); i++)
     {
-        *size *= 2;
-        *sym = realloc(*sym, *size * sizeof(char *));
-        if (*sym == NULL)
+        if (_stricmp(word, instruction[i]) == 0)
+            return 1;
+    }
+    return 0;
+}
+// 특정 문자열이 reg8인지 확인
+int is_reg8(const char *word)
+{
+    for (int i = 0; i < ARRAY_SIZE(reg8); i++)
+    {
+        if (_stricmp(word, reg8[i]) == 0)
+            return 1;
+    }
+    return 0;
+}
+// 특정 문자열이 reg16인지 확인
+int is_reg16(const char *word)
+{
+    for (int i = 0; i < ARRAY_SIZE(reg16); i++)
+    {
+        if (_stricmp(word, reg16[i]) == 0)
+            return 1;
+        else if (strchr(word, '+') != NULL)
+            return 1;
+    }
+    return 0;
+}
+// 특정 문자열이 의사명령어인지 확인
+int is_pseudo(const char *word)
+{
+    for (int i = 0; i < ARRAY_SIZE(pseudo); i++)
+    {
+        if (_stricmp(word, pseudo[i]) == 0)
+            return 1;
+    }
+    return 0;
+}
+// 특정 문자열이 숫자인지 확인
+int is_number(const char *word)
+{
+    int i = 0;
+    int len = strlen(word);
+    if (word[0] == '-')
+        i++; // 음수 확인
+    if (len > 1 && (word[len - 1] == 'H' || word[len - 1] == 'h'))
+    {
+        for (int j = i; j < len - 1; j++)
         {
-            perror("메모리 할당 실패");
-            exit(1);
+            if (!isxdigit(word[j]))
+                return 0;
         }
+        return 1;
     }
-    (*sym)[*count] = strdup(new_symbol);
-    if ((*sym)[*count] == NULL)
-    {
-        perror("메모리 할당 실패");
-        exit(1);
-    }
-    (*count)++;
-}
-
-void free_symbols(char **sym, int count)
-{
-    for (int i = 0; i < count; i++)
-    {
-        free(sym[i]);
-    }
-    free(sym);
-}
-
-void pop_back(char *word)
-{
-    size_t len = strlen(word);
-    if (len > 0)
-    {
-        word[len - 1] = '\0';
-    }
-}
-
-void pop_front(char *word)
-{
-    size_t len = strlen(word);
-    if (len > 0)
-    {
-        memmove(word, word + 1, len);
-    }
-}
-
-void clean_word(char *word)
-{
-    size_t len = strlen(word);
-    if (len > 0 && (word[len - 1] == ',' || word[len - 1] == ':'))
-    {
-        pop_back(word);
-    }
-    if (len > 1 && word[0] == '[' && word[strlen(word) - 1] == ']')
-    {
-        pop_back(word);
-        pop_front(word);
-    }
-}
-
-bool is_integer(const char *word)
-{
-    for (int i = 0; word[i] != '\0'; i++)
+    for (; word[i] != '\0'; i++)
     {
         if (!isdigit(word[i]))
-        {
-            return false;
-        }
+            return 0;
     }
-    return true;
+    return 1;
 }
-
-bool find_and_replace(const char *word, const char *arr[], int size, const char *arr_name, char *output)
+// 특정 문자열이 배열에 있는지 확인
+int is_in_array(const char *word, const char *arr[], size_t size)
 {
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
-        if (strcmp(word, arr[i]) == 0)
-        {
-            sprintf(output, "%s", arr_name);
-            return true;
-        }
+        if (_stricmp(word, arr[i]) == 0)
+            return 1;
     }
-    return false;
+    return 0;
+}
+// 명령어 길이 계산
+int calculate_length(const char *opcode, const char *op1, const char *op2)
+{
+    if (_stricmp(op1, "DB") == 0)
+    {
+        return 1; // DB는 1 바이트
+    }
+    if (_stricmp(op1, "DW") == 0)
+    {
+        return 2; // DW는 2 바이트
+    }
+    // MOV 명령어
+    if (_stricmp(opcode, "MOV") == 0)
+    {
+        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
+        {
+            return 2; // 8비트 레지스터 간 MOV
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
+        {
+            return 2; // 16비트 레지스터 간 MOV
+        }
+        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
+        {
+            if (is_number(op2))
+            {
+                return 2; // 즉시값과의 MOV
+            }
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)))
+        {
+            if (is_number(op2))
+            {
+                return 3; // 즉시값과의 MOV
+            }
+            return 4; // 메모리 주소와의 MOV
+        }
+        return 3; // 기본 메모리 MOV
+    }
+    // ADD, SUB 명령어
+    if (_stricmp(opcode, "ADD") == 0 || _stricmp(opcode, "SUB") == 0)
+    {
+        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
+        {
+            return 2; // 8비트 레지스터 간 ADD/SUB
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
+        {
+            return 2; // 16비트 레지스터 간 ADD/SUB
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) || is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
+        {
+            if (is_number(op2))
+            {
+                return 3; // 즉시값과의 ADD/SUB
+            }
+            return 4; // 메모리 주소와의 ADD/SUB
+        }
+        return 3; // 기본 메모리 ADD/SUB
+    }
+    // CMP 명령어
+    if (_stricmp(opcode, "CMP") == 0)
+    {
+        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
+        {
+            return 2; // 8비트 레지스터 간 CMP
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
+        {
+            return 2; // 16비트 레지스터 간 CMP
+        }
+        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) || is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
+        {
+            if (is_number(op2))
+            {
+                return 3; // 즉시값과의 CMP
+            }
+            return 4; // 메모리 주소와의 CMP
+        }
+        return 3; // 기본 메모리 CMP
+    }
+    // JMP 및 조건부 점프 명령어
+    if (is_in_array(opcode, (const char *[]){"JMP", "JZ", "JA", "JB", "JAE", "JBE"}, 6))
+    {
+        return 2;
+    }
+    // INC, DEC 명령어
+    if (_stricmp(opcode, "INC") == 0 || _stricmp(opcode, "DEC") == 0)
+    {
+        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) || is_in_array(op1, reg16, ARRAY_SIZE(reg16)))
+        {
+            return 1; // 레지스터 대상
+        }
+        return 2; // 메모리 대상
+    }
+    // INT 명령어
+    if (_stricmp(opcode, "INT") == 0)
+        return 2;
+    // 기본 길이
+    return 2;
 }
 
 int main()
 {
-    FILE *input_file = fopen("symbol.txt", "r");
-    FILE *output_file = fopen("out.txt", "w");
-    if (input_file == NULL || output_file == NULL)
+    FILE *inputFile = NULL;
+    FILE *outputFile = NULL;
+    char line[256] = {0};
+    const char *delim = " ,\t";
+    // txt파일 읽기 모드로 열기
+    inputFile = fopen("symbol.txt", "r");
+    if (inputFile == NULL)
     {
-        printf("파일을 열 수 없습니다.\n");
-        return 1;
+        printf("Failed to open input file again.\n");
+        exit(1);
     }
-
-    char line[MAX_LENGTH];
-    char output_word[MAX_LENGTH];
-    char **sym = malloc(INITIAL_SIZE * sizeof(char *));
-    if (sym == NULL)
+    // 출력 파일 열기
+    outputFile = fopen("output3.txt", "w+");
+    if (outputFile == NULL)
     {
-        perror("메모리 할당 실패");
-        return 1;
+        printf("Failed to open output file.\n");
+        exit(1);
     }
-
-    int size = INITIAL_SIZE;
-    int count = 0;
-    int ip = 0; // IP 초기화
-
-    while (fgets(line, sizeof(line), input_file))
+    // 파일에서 한 줄씩 읽고 치환하기
+    while (fgets(line, sizeof(line), inputFile))
     {
-        // 줄바꿈만 있는 줄 체크
-        if (strlen(line) == 1 && line[0] == '\n')
-        {
-            continue; // 빈 줄은 IP 증가 없이 무시
+        if (strlen(line) <= 1)
+        { // 빈 줄은 그대로 출력
+            fprintf(outputFile, "\n");
+            continue;
         }
-
-        // 줄 끝의 개행 문자 제거
-        size_t len = strlen(line);
-        if (len > 0 && line[len - 1] == '\n')
+        line[strcspn(line, "\n")] = '\0'; // Enter 제거
+        fprintf(outputFile, "%s ", line);
+        // 원본 복사 후 단어 단위로 분리
+        char line_copy[256];
+        strcpy(line_copy, line);
+        // 레이블이 있으면 다음 단어로 이동
+        char *command = strchr(line_copy, ':');
+        if (command != NULL)
         {
-            line[len - 1] = '\0'; // 개행 문자 제거
-        }
-
-        // 원본 명령 출력 (토큰화 전)
-        fprintf(output_file, "%s\n", line); // 원본 명령 출력
-
-        char *token = strtok(line, " \t");
-        if (token == NULL || token[0] == ';')
-        {
-            continue; // 비어 있는 줄이나 주석은 처리하지 않음
-        }
-
-        bool is_pop_line = false;
-        bool is_sym_line = false;
-
-        char processed_line[MAX_LENGTH] = ""; // 전체 라인 처리 결과 저장
-        while (token != NULL)
-        {
-            memset(output_word, 0, sizeof(output_word)); // output_word 초기화
-            clean_word(token);                           // 토큰 정리
-
-            // 토큰 처리
-            if (is_integer(token))
+            command++;
+            // 다음 단어가 공백이면 한번 더 이동
+            while (*command == ' ' || *command == '\t')
             {
-                strcat(processed_line, "num ");
+                command++;
             }
-            else if (find_and_replace(token, reg16, sizeof(reg16) / sizeof(reg16[0]), "reg16", output_word) ||
-                     find_and_replace(token, reg8, sizeof(reg8) / sizeof(reg8[0]), "reg8", output_word) ||
-                     find_and_replace(token, optbl, sizeof(optbl) / sizeof(optbl[0]), "op", output_word))
-            {
-                strcat(processed_line, output_word);
-                strcat(processed_line, " ");
-            }
-            else if (find_and_replace(token, pop, sizeof(pop) / sizeof(pop[0]), "pop", output_word))
-            {
-                is_pop_line = true;
-                strcat(processed_line, "pop ");
-            }
-            else
-            {
-                is_sym_line = true;
-                strcat(processed_line, "sym ");
-            }
-
-            token = strtok(NULL, " \t");
-        }
-        ip = 0;
-        // IP 증분 규칙
-        if (is_pop_line)
-        {
-            // POP이 포함된 경우 IP 변화 없음
-        }
-        else if (is_sym_line)
-        {
-            ip += 3; // SYM이 포함된 경우 IP 3씩 증가
         }
         else
         {
-            ip += 2; // 나머지 경우 IP 2씩 증가
+            command = line_copy;
         }
-        // 처리된 내용 출력
-        fprintf(output_file, "[%s]%d\n", processed_line, ip);
+        // 명령어와 오퍼랜드 파싱
+        char opcode[16] = "", op1[16] = "", op2[16] = "";
+        char *token = strtok(command, delim);
+        int count = 0;
+        // 검사 및 치환
+        fprintf(outputFile, " [");
+
+        while (token != NULL)
+        {
+            if (is_instruction(token))
+            {
+                strcpy(opcode, token);
+                fprintf(outputFile, "op ");
+            }
+            else if (is_reg8(token))
+            {
+                if (count == 1)
+                    strcpy(op1, token);
+                else
+                    strcpy(op2, token);
+                fprintf(outputFile, "reg8 ");
+            }
+            else if (is_reg16(token))
+            {
+                if (count == 1)
+                    strcpy(op1, token);
+                else
+                    strcpy(op2, token);
+                fprintf(outputFile, "reg16 ");
+            }
+            else if (is_number(token))
+            {
+                strcpy(op2, token);
+                fprintf(outputFile, "num ");
+            }
+            else if (is_pseudo(token))
+            {
+                strcpy(op1, token);
+                fprintf(outputFile, "pop ");
+            }
+            else
+            {
+                if (count == 1)
+                    strcpy(op1, token);
+                else
+                    strcpy(op2, token);
+                fprintf(outputFile, "sym ");
+            }
+            count++;
+            token = strtok(NULL, delim);
+        }
+        // 길이 계산
+        int length = calculate_length(opcode, op1, op2);
+        // 결과 출력
+
+        fprintf(outputFile, "] %d\n", length);
     }
-
-    fclose(input_file);
-    fclose(output_file);
-
-    printf("변환 결과가 out.txt에 저장되었습니다.\n");
-
-    for (int i = 0; i < count; i++)
-    {
-        printf("심볼 %d: %s\n", i + 1, sym[i]);
-    }
-
-    free_symbols(sym, count);
+    printf("Complete\n");
+    fclose(inputFile);
+    fclose(outputFile);
     return 0;
 }

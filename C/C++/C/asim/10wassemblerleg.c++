@@ -60,21 +60,23 @@ int counter(FILE* fp) {
         while (token != NULL) {
             if (token[strlen(token) - 1] == ':') {//레이블인지 확인 :를 기준으로 :와 같이 넣고
                 token[strlen(token) - 1] = '\0';  //레이블의 :를 지움
-                cout << "Label : " << token << " " << wordIp << endl;
+                cout  << token << " " << wordIp <<" 0"<< endl;
                 storeLabel(token, wordIp); //key와 value로 딕셔너리로 보냄
             }
             else if (strcmp(token, "DB") == 0 || strcmp(token, "DW") == 0) {
-                cout << pre_token << " " << ordIp << endl;
-                storeLabel(pre_token, ordIp);
-            }
-
+    char* data_value = strtok(NULL, "\t\n,+[] "); // DB나 DW 뒤의 값을 읽음
+    if (data_value != NULL) {
+        cout << pre_token << " " << ordIp << " " << data_value << endl; // pre_token, ordIp, data_value 출력
+        storeLabel(pre_token, ordIp); // 기존 레이블 저장
+    }
+}
       
             bool isInstruction = false;
 
             for (int i = 0; i < instructionLength; i++) {//해당 토큰이 명령어인지 확인 명령어가 맞으면 isInstruction를 참으로
                 if (strcmp(token, instruc[i]) == 0) {
                     isInstruction = true;
-                    wordIp+=2;//명령어를 세기 체크
+                    wordIp+=1;//명령어를 세기 체크
                     break;
                 }
             }
@@ -88,7 +90,7 @@ int counter(FILE* fp) {
             ordIp = wordIp;   
             token = strtok(NULL, "\t\n,+[] ");//다음 토큰 불러오기
         }
-        wordIp+=2;//체크
+        wordIp+=1;//체크
     }
     return 1;
 }
@@ -105,7 +107,7 @@ void find_Registers(char* token, int* cnt) {
     }
 
     if (!is_register) {
-        (*cnt)+=2;//명령어도 아니고 레지스터도 아닌경우 cnt증가(레이블, 상수, 변수) 체크
+        (*cnt)+=1;//명령어도 아니고 레지스터도 아닌경우 cnt증가(레이블, 상수, 변수) 체크
     }
 }
 
