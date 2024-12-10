@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <algorithm> // std::sort 사용
 
+int hint = 0;           // 전역 변수 정의
+int wrongCount[4] = { 0 }; // 전역 배열 정의
+
 CardMemory::CardMemory() : texture(nullptr), cardValue(0), isRevealed(false) {
     rect = { 0, 0, 0, 0 };
 }
@@ -88,7 +91,7 @@ void renderBackFaces(int cardCount, CardMemory* cards, SDL_Renderer* renderer, S
     SDL_RenderPresent(renderer);
 }
 
-void showCorrectCards(int cardCount, CardMemory* cards, SDL_Renderer* renderer, int time=2) {
+void showCorrectCards(int cardCount, CardMemory* cards, SDL_Renderer* renderer, int time = 2) {
     hint++;
     for (int i = 0; i < cardCount; i++) {
         SDL_RenderCopy(renderer, cards[i].texture, NULL, &cards[i].rect);
@@ -163,7 +166,7 @@ int playRound(int cardCount, int targetCount, int* cardValues, CardMemory* cards
                                 return 1;
                             }
                         }
-                        else if (cards[i].cardValue != 14&& cards[i].cardValue != 15) {
+                        else if (cards[i].cardValue != 14 && cards[i].cardValue != 15) {
                             wrongCount[stage]++;
                             printf("틀린 횟수: %d\n", wrongCount[stage]);
                             SDL_RenderCopy(renderer, cards[i].texture, NULL, &cards[i].rect);
@@ -184,4 +187,62 @@ int playRound(int cardCount, int targetCount, int* cardValues, CardMemory* cards
         }
     }
     return 0;
+}
+
+void playCardMemory(SDL_Renderer* renderer) {
+    char cardImage[16][16] = {
+        "imgs/free01.png", "imgs/free02.png", "imgs/free03.png", "imgs/free04.png",
+        "imgs/free05.png", "imgs/free06.png", "imgs/free07.png", "imgs/free08.png",
+        "imgs/free09.png", "imgs/free10.png", "imgs/free11.png", "imgs/free12.png",
+        "imgs/free13.png", "imgs/free14.png", "imgs/free15.png"
+    };
+
+    srand(time(NULL));
+    SDL_Surface* backSurface = IMG_Load("imgs/free00.png");
+    SDL_Texture* backTexture = SDL_CreateTextureFromSurface(renderer, backSurface);
+    SDL_FreeSurface(backSurface);
+
+    int cardValues[16];
+    cardValues[0] = 14;
+    for (int i = 1; i < 16; i++) {
+        cardValues[i] = rand() % 15;
+    }
+    std::sort(cardValues, cardValues + 16);
+
+    int stages[4] = { 4, 6, 9, 16 };
+    CardMemory cards[16];
+
+    for (int stage = 0; stage < 4; stage++) {
+        int cardCount = stages[stage];
+        int targetCount = initializeCards(cardCount, cardValues, cards, renderer, cardImage);
+
+        for (int i = 0; i < cardCount; i++) {
+            SDL_RenderCopy(renderer, cards[i].texture, NULL, &cards[i].rect);
+        }
+        SDL_RenderPresent(renderer);
+        if (stage==0) {
+            SDL_Delay((stage + 1) * 2000);
+
+        }
+        SDL_Delay((stage + 1) * 2000);
+
+        renderBackFaces(cardCount, cards, renderer, backTexture);
+
+        if (playRound(cardCount, targetCount, cardValues, cards, renderer, backTexture, stage) == -1) {
+            break;
+        }
+    }
+
+    SDL_DestroyTexture(backTexture);
+    for (int i = 0; i < 16; i++) {
+        if (cards[i].texture != NULL) {
+            SDL_DestroyTexture(cards[i].texture);
+        }
+    }
+
+    printf("\n1라운드 틀린 횟수:%d\n", wrongCount[0]);
+    printf("2라운드 틀린 횟수:%d\n", wrongCount[1]);
+    printf("3라운드 틀린 횟수:%d\n", wrongCount[2]);
+    printf("4라운드 틀린 횟수:%d\n", wrongCount[3]);
+    printf("전체 힌트 사용 횟수:%d\n", hint);
 }
