@@ -1,301 +1,115 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-const char *instruction[] = {"MOV", "ADD", "SUB", "CMP", "JMP", "JZ", "JA", "JB", "JAE", "JBE", "INC", "DEC", "INT"};
-const char *reg8[] = {"AL", "AH", "BL", "BH", "CL", "CH", "DL", "DH"};
-const char *reg16[] = {"AX", "BX", "CX", "DX", "CS", "DS", "ES", "SS", "IP", "SP", "BP", "SI", "DI"};
-const char *pseudo[] = {"SEGMENT", "ASSUME", "DW", "DB", "END"};
-
-// 배열 크기 매크로
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
-
-// 특정 문자열이 명령어인지 확인
-int is_instruction(const char *word)
-{
-    for (int i = 0; i < ARRAY_SIZE(instruction); i++)
-    {
-        if (_stricmp(word, instruction[i]) == 0)
-            return 1;
-    }
-    return 0;
-}
-// 특정 문자열이 reg8인지 확인
-int is_reg8(const char *word)
-{
-    for (int i = 0; i < ARRAY_SIZE(reg8); i++)
-    {
-        if (_stricmp(word, reg8[i]) == 0)
-            return 1;
-    }
-    return 0;
-}
-// 특정 문자열이 reg16인지 확인
-int is_reg16(const char *word)
-{
-    for (int i = 0; i < ARRAY_SIZE(reg16); i++)
-    {
-        if (_stricmp(word, reg16[i]) == 0)
-            return 1;
-        else if (strchr(word, '+') != NULL)
-            return 1;
-    }
-    return 0;
-}
-// 특정 문자열이 의사명령어인지 확인
-int is_pseudo(const char *word)
-{
-    for (int i = 0; i < ARRAY_SIZE(pseudo); i++)
-    {
-        if (_stricmp(word, pseudo[i]) == 0)
-            return 1;
-    }
-    return 0;
-}
-// 특정 문자열이 숫자인지 확인
-int is_number(const char *word)
-{
-    int i = 0;
-    int len = strlen(word);
-    if (word[0] == '-')
-        i++; // 음수 확인
-    if (len > 1 && (word[len - 1] == 'H' || word[len - 1] == 'h'))
-    {
-        for (int j = i; j < len - 1; j++)
-        {
-            if (!isxdigit(word[j]))
-                return 0;
-        }
-        return 1;
-    }
-    for (; word[i] != '\0'; i++)
-    {
-        if (!isdigit(word[i]))
-            return 0;
-    }
-    return 1;
-}
-// 특정 문자열이 배열에 있는지 확인
-int is_in_array(const char *word, const char *arr[], size_t size)
-{
-    for (size_t i = 0; i < size; i++)
-    {
-        if (_stricmp(word, arr[i]) == 0)
-            return 1;
-    }
-    return 0;
-}
-// 명령어 길이 계산
-int calculate_length(const char *opcode, const char *op1, const char *op2)
-{
-    if (_stricmp(op1, "DB") == 0)
-    {
-        return 1; // DB는 1 바이트
-    }
-    if (_stricmp(op1, "DW") == 0)
-    {
-        return 2; // DW는 2 바이트
-    }
-    // MOV 명령어
-    if (_stricmp(opcode, "MOV") == 0)
-    {
-        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
-        {
-            return 2; // 8비트 레지스터 간 MOV
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
-        {
-            return 2; // 16비트 레지스터 간 MOV
-        }
-        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
-        {
-            if (is_number(op2))
-            {
-                return 2; // 즉시값과의 MOV
-            }
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)))
-        {
-            if (is_number(op2))
-            {
-                return 3; // 즉시값과의 MOV
-            }
-            return 4; // 메모리 주소와의 MOV
-        }
-        return 3; // 기본 메모리 MOV
-    }
-    // ADD, SUB 명령어
-    if (_stricmp(opcode, "ADD") == 0 || _stricmp(opcode, "SUB") == 0)
-    {
-        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
-        {
-            return 2; // 8비트 레지스터 간 ADD/SUB
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
-        {
-            return 2; // 16비트 레지스터 간 ADD/SUB
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) || is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
-        {
-            if (is_number(op2))
-            {
-                return 3; // 즉시값과의 ADD/SUB
-            }
-            return 4; // 메모리 주소와의 ADD/SUB
-        }
-        return 3; // 기본 메모리 ADD/SUB
-    }
-    // CMP 명령어
-    if (_stricmp(opcode, "CMP") == 0)
-    {
-        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) && is_in_array(op2, reg8, ARRAY_SIZE(reg8)))
-        {
-            return 2; // 8비트 레지스터 간 CMP
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) && is_in_array(op2, reg16, ARRAY_SIZE(reg16)))
-        {
-            return 2; // 16비트 레지스터 간 CMP
-        }
-        if (is_in_array(op1, reg16, ARRAY_SIZE(reg16)) || is_in_array(op1, reg8, ARRAY_SIZE(reg8)))
-        {
-            if (is_number(op2))
-            {
-                return 3; // 즉시값과의 CMP
-            }
-            return 4; // 메모리 주소와의 CMP
-        }
-        return 3; // 기본 메모리 CMP
-    }
-    // JMP 및 조건부 점프 명령어
-    if (is_in_array(opcode, (const char *[]){"JMP", "JZ", "JA", "JB", "JAE", "JBE"}, 6))
-    {
-        return 2;
-    }
-    // INC, DEC 명령어
-    if (_stricmp(opcode, "INC") == 0 || _stricmp(opcode, "DEC") == 0)
-    {
-        if (is_in_array(op1, reg8, ARRAY_SIZE(reg8)) || is_in_array(op1, reg16, ARRAY_SIZE(reg16)))
-        {
-            return 1; // 레지스터 대상
-        }
-        return 2; // 메모리 대상
-    }
-    // INT 명령어
-    if (_stricmp(opcode, "INT") == 0)
-        return 2;
-    // 기본 길이
-    return 2;
-}
-
+#define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4996)
+#define MAX_WORDS 1000
+#define MAX_LINE_LENGTH 100 // 한 줄의 최대 길이
+// 57      SUB AX 257
 int main()
 {
-    FILE *inputFile = NULL;
-    FILE *outputFile = NULL;
-    char line[256] = {0};
-    const char *delim = " ,\t";
-    // txt파일 읽기 모드로 열기
-    inputFile = fopen("symbol.txt", "r");
-    if (inputFile == NULL)
+    FILE *file;
+    char lines[MAX_WORDS][MAX_LINE_LENGTH]; // 각 줄을 저장하는 2차원 배열
+    int lineCount = 0;
+    char words[MAX_WORDS][MAX_LINE_LENGTH]; // 각 단어를 저장할 2차원 배열
+    int wordCount = 1;
+    char indexName[MAX_WORDS][MAX_LINE_LENGTH]; // 레이블이나 변수를 저장하는 배열
+    char index[MAX_WORDS][MAX_LINE_LENGTH];     // 레이블이나 변수 위치 저장
+    int indexCount = 0;
+
+    file = fopen("symbol.txt", "r");
+
+    if (file == NULL)
     {
-        printf("Failed to open input file again.\n");
-        exit(1);
+        printf("파일을 읽지 못했습니다.\n");
+        return 1;
     }
-    // 출력 파일 열기
-    outputFile = fopen("output3.txt", "w+");
-    if (outputFile == NULL)
+
+    // 파일에서 한 줄씩 읽어서 lines 배열에 저장
+    while (fgets(lines[lineCount], MAX_LINE_LENGTH, file) != NULL && lineCount < MAX_WORDS)
     {
-        printf("Failed to open output file.\n");
-        exit(1);
-    }
-    // 파일에서 한 줄씩 읽고 치환하기
-    while (fgets(line, sizeof(line), inputFile))
-    {
-        if (strlen(line) <= 1)
-        { // 빈 줄은 그대로 출력
-            fprintf(outputFile, "\n");
-            continue;
-        }
-        line[strcspn(line, "\n")] = '\0'; // Enter 제거
-        fprintf(outputFile, "%s ", line);
-        // 원본 복사 후 단어 단위로 분리
-        char line_copy[256];
-        strcpy(line_copy, line);
-        // 레이블이 있으면 다음 단어로 이동
-        char *command = strchr(line_copy, ':');
-        if (command != NULL)
+        // 개행 문자 제거하지 않고 그대로 저장
+        char line[MAX_LINE_LENGTH];
+        strcpy(line, lines[lineCount]);
+
+        // 각 줄의 첫 번째 단어를 추출
+        char *token = strtok(line, " \t\n");
+        if (token != NULL)
         {
-            command++;
-            // 다음 단어가 공백이면 한번 더 이동
-            while (*command == ' ' || *command == '\t')
+            // 첫 단어가 존재할 경우만 검출 (레이블 또는 변수)
+            if (strchr(token, ':') != NULL || strstr(token, "DATA") == token)
             {
-                command++;
+                // 레이블에서는 ':'를 제거하고 indexName과 index에 저장
+                token[strcspn(token, ":")] = '\0';
+                strcpy(indexName[indexCount], token);
+                sprintf(index[indexCount], "%d", wordCount); // 위치 저장
+                indexCount++;
             }
         }
-        else
-        {
-            command = line_copy;
-        }
-        // 명령어와 오퍼랜드 파싱
-        char opcode[16] = "", op1[16] = "", op2[16] = "";
-        char *token = strtok(command, delim);
-        int count = 0;
-        // 검사 및 치환
-        fprintf(outputFile, " [");
 
+        // words 배열에 줄의 단어를 추가로 저장
+        while (token != NULL && wordCount < MAX_WORDS)
+        {
+            strcpy(words[wordCount], token);
+            for (int i = 0; i < strlen(token); i++)
+            {
+                wordCount++;
+            }
+            token = strtok(NULL, " \t\n");
+        }
+
+        lineCount++;
+    }
+    fclose(file);
+
+    // Assembly code 원본 형식으로 출력
+    printf("Assembly code:\n\n");
+    for (int i = 0; i < lineCount; i++)
+    {
+        printf("%s", lines[i]); // 원래 줄 끝 개행 포함된 상태로 출력
+    }
+
+    // Table index 출력
+    printf("\nTable index:\n\n");
+    for (int i = 0; i < indexCount; i++)
+    {
+        printf("%s : %s\n", indexName[i], index[i]);
+    }
+
+    // Symnolic code 출력
+    printf("\nSymnolic code:\n\n");
+    for (int i = 0; i < lineCount; i++)
+    {
+        // 각 줄을 다시 처리하여 레이블을 인덱스로 치환
+        char line[MAX_LINE_LENGTH];
+        strcpy(line, lines[i]);
+
+        // 단어별로 처리
+        char *token = strtok(line, " :,\n");
         while (token != NULL)
         {
-            if (is_instruction(token))
+            int replaced = 0;
+            for (int j = 0; j < indexCount; j++)
             {
-                strcpy(opcode, token);
-                fprintf(outputFile, "op ");
+                // 레이블이 발견되면 치환
+                if (strcmp(token, indexName[j]) == 0)
+                {
+                    printf("%s ", index[j]);
+                    replaced = 1;
+                    break;
+                }
             }
-            else if (is_reg8(token))
-            {
-                if (count == 1)
-                    strcpy(op1, token);
-                else
-                    strcpy(op2, token);
-                fprintf(outputFile, "reg8 ");
-            }
-            else if (is_reg16(token))
-            {
-                if (count == 1)
-                    strcpy(op1, token);
-                else
-                    strcpy(op2, token);
-                fprintf(outputFile, "reg16 ");
-            }
-            else if (is_number(token))
-            {
-                strcpy(op2, token);
-                fprintf(outputFile, "num ");
-            }
-            else if (is_pseudo(token))
-            {
-                strcpy(op1, token);
-                fprintf(outputFile, "pop ");
-            }
-            else
-            {
-                if (count == 1)
-                    strcpy(op1, token);
-                else
-                    strcpy(op2, token);
-                fprintf(outputFile, "sym ");
-            }
-            count++;
-            token = strtok(NULL, delim);
-        }
-        // 길이 계산
-        int length = calculate_length(opcode, op1, op2);
-        // 결과 출력
 
-        fprintf(outputFile, "] %d\n", length);
+            // 치환되지 않은 단어는 그대로 출력
+            if (!replaced)
+            {
+                printf("%s ", token);
+            }
+            token = strtok(NULL, " :,\n");
+        }
+        printf("\n");
     }
-    printf("Complete\n");
-    fclose(inputFile);
-    fclose(outputFile);
+
     return 0;
 }

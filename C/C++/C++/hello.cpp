@@ -1,18 +1,16 @@
 #include <iostream>
-#include <string>
 using namespace std;
 
+
+
 int main() {
-	string s;
-
-	cout << "문자열 입력" << endl;
-	getline(cin, s, '\n');
-	int len = s.length();
-
-	for(int i = 0; i < len; i++) {
-		string first = s.substr(0, len-1);
-		string last = s.substr(len-1,len);
-		s = last + first;
-		cout << s << endl;
+	char ch;
+	while(true) {
+		cin.get(ch); // 입력된 키를 ch에 저장하여 리턴
+		if(cin.eof()) break; // EOF를 만나면 읽기 종료
+		cout.put(ch); // ch의 문자 출력
+		if(ch == '\n')  
+			break; // <Enter> 키가 입력되면 읽기 중단
 	}
+
 }

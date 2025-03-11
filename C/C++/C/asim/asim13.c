@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+// op reg16 num [IP=2]
+
 #define MAX_LENGTH 100
 #define INITIAL_SIZE 10 // 초기 심볼 배열 크기
 

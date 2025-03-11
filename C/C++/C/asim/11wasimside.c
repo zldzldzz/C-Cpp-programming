@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+// MOV [op ] AX [reg16 ] 257 [num ] 2
+
 #define MAX_LENGTH 100
 #define INITIAL_SIZE 10 // 초기 심볼 배열 크기
 
